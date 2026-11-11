@@ -2,9 +2,8 @@
 **Global Solution 2026.2 — Advanced Programming And Mobile Dev (FIAP)**
 
 ## 👥 Integrantes do Grupo
-- **[Nome Completo Integrante 1]** — RM: **[RM 1]**
-- **[Nome Completo Integrante 2]** — RM: **[RM 2]**
-- **[Nome Completo Integrante 3]** — RM: **[RM 3]**
+- **Mário Secundino Santana Lopes Portella** — RM: **555321**
+- **[Luis Fernando Picarelli]** — RM: **[RM 2]**
 
 ## 📌 Descrição do Projeto
 Plataforma integrada de monitoramento e análise de riscos urbanos (alagamentos, ilhas de calor e interrupções de serviços essenciais), composta por backend em **Java com Spring Boot** e aplicativo mobile em **React Native (Expo + TypeScript)**.
