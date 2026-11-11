@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,33 @@ import { ConnectionBanner } from '../components/ConnectionBanner';
 import { DashboardHeader } from '../components/DashboardHeader';
 import { RiskCard } from '../components/RiskCard';
 
+const BAIRROS_SP = [
+  'Ipiranga',
+  'Bela Vista',
+  'Vila Mariana',
+  'Mooca',
+  'Pinheiros',
+  'Tatuapé',
+  'Lins de Vasconcelos',
+  'Cambuci',
+  'Liberdade',
+  'Consolação',
+  'Aclimação',
+  'Santana',
+  'Butantã',
+  'Itaquera',
+  'Santo Amaro',
+  'Perdizes',
+  'Vila Prudente',
+  'Brás',
+  'Penha',
+  'Jabaquara',
+  ' Brooklin',
+  'Casa Verde',
+  'Lapa',
+  ' Tucuruvi',
+].map((b) => b.trim());
+
 export const HomeScreen: React.FC = () => {
   const [events, setEvents] = useState<RiskEvent[]>([]);
   const [indicators, setIndicators] = useState<DashboardIndicators | null>(null);
@@ -28,10 +55,18 @@ export const HomeScreen: React.FC = () => {
 
   const [showForm, setShowForm] = useState<boolean>(false);
   const [neighborhood, setNeighborhood] = useState<string>('Ipiranga');
+  const [neighborhoodSearch, setNeighborhoodSearch] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [selectedType, setSelectedType] = useState<
     'ALAGAMENTO' | 'ILHA_DE_CALOR' | 'INTERRUPCAO_SERVICO'
   >('ALAGAMENTO');
+
+  // Filtra os bairros conforme o texto digitado na pesquisa
+  const filteredNeighborhoods = useMemo(() => {
+    const query = neighborhoodSearch.trim().toLowerCase();
+    if (!query) return BAIRROS_SP;
+    return BAIRROS_SP.filter((b) => b.toLowerCase().includes(query));
+  }, [neighborhoodSearch]);
 
   const syncDataWithBackend = useCallback(async () => {
     const start = Date.now();
@@ -91,6 +126,7 @@ export const HomeScreen: React.FC = () => {
             : 8,
       });
       setDescription('');
+      setNeighborhoodSearch('');
       setShowForm(false);
       await syncDataWithBackend();
     } catch {
@@ -159,7 +195,7 @@ export const HomeScreen: React.FC = () => {
               <View style={styles.formBox}>
                 <Text style={styles.formTitle}>Novo Relato Comunitário</Text>
 
-                <Text style={styles.formLabel}>Tipo de Risco:</Text>
+                <Text style={styles.formLabel}>1. Tipo de Risco:</Text>
                 <View style={styles.typeSelectorRow}>
                   {(['ALAGAMENTO', 'ILHA_DE_CALOR', 'INTERRUPCAO_SERVICO'] as const).map(
                     (type) => (
@@ -179,17 +215,59 @@ export const HomeScreen: React.FC = () => {
                   )}
                 </View>
 
-                <Text style={styles.formLabel}>Bairro / Região:</Text>
+                <View style={styles.selectedBairroHeader}>
+                  <Text style={styles.formLabel}>2. Bairro / Região:</Text>
+                  <View style={styles.selectedBairroBadge}>
+                    <Text style={styles.selectedBairroBadgeText}>
+                      📍 Selecionado: {neighborhood}
+                    </Text>
+                  </View>
+                </View>
+
                 <TextInput
                   style={styles.input}
-                  value={neighborhood}
-                  onChangeText={setNeighborhood}
-                  placeholder="Ex: Ipiranga, Vila Mariana..."
-                  placeholderTextColor="#64748b"
+                  value={neighborhoodSearch}
+                  onChangeText={setNeighborhoodSearch}
+                  placeholder="🔍 Pesquisar bairro na lista (ex: Ipiranga, Mooca, Lins...)"
+                  placeholderTextColor="#94a3b8"
                 />
 
+                <View style={styles.bairroListContainer}>
+                  {filteredNeighborhoods.length > 0 ? (
+                    filteredNeighborhoods.map((item) => {
+                      const isSelected = item === neighborhood;
+                      return (
+                        <TouchableOpacity
+                          key={item}
+                          style={[
+                            styles.bairroOption,
+                            isSelected && styles.bairroOptionSelected,
+                          ]}
+                          onPress={() => {
+                            setNeighborhood(item);
+                            setNeighborhoodSearch('');
+                          }}
+                        >
+                          <Text
+                            style={[
+                              styles.bairroOptionText,
+                              isSelected && styles.bairroOptionTextSelected,
+                            ]}
+                          >
+                            {isSelected ? `✓ ${item}` : item}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })
+                  ) : (
+                    <Text style={styles.emptySearchText}>
+                      Nenhum bairro encontrado para "{neighborhoodSearch}"
+                    </Text>
+                  )}
+                </View>
+
                 <Text style={styles.formLabel}>
-                  Descrição da Ocorrência (Anônimo - LGPD):
+                  3. Descrição da Ocorrência (Anônimo - LGPD):
                 </Text>
                 <TextInput
                   style={[styles.input, styles.textArea]}
@@ -205,7 +283,7 @@ export const HomeScreen: React.FC = () => {
                   onPress={handleSubmitReport}
                 >
                   <Text style={styles.submitBtnText}>
-                    Enviar Alerta para Análise
+                    Enviar Alerta em {neighborhood}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -325,13 +403,70 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
+  selectedBairroHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  selectedBairroBadge: {
+    backgroundColor: '#065f46',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#10b981',
+  },
+  selectedBairroBadgeText: {
+    color: '#d1fae5',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  bairroListContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    backgroundColor: '#0f172a',
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#334155',
+    marginBottom: 14,
+  },
+  bairroOption: {
+    backgroundColor: '#1e293b',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#475569',
+  },
+  bairroOptionSelected: {
+    backgroundColor: '#2563eb',
+    borderColor: '#60a5fa',
+  },
+  bairroOptionText: {
+    color: '#cbd5e1',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  bairroOptionTextSelected: {
+    color: '#ffffff',
+    fontWeight: '800',
+  },
+  emptySearchText: {
+    color: '#94a3b8',
+    fontSize: 12,
+    fontStyle: 'italic',
+    paddingVertical: 4,
+  },
   input: {
     backgroundColor: '#0f172a',
     color: '#f8fafc',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    marginBottom: 12,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: '#334155',
     fontSize: 14,
