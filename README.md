@@ -3,7 +3,7 @@
 
 ## 👥 Integrantes do Grupo
 - **Mário Secundino Santana Lopes Portella** — RM: **555321**
-- **[Luis Fernando Picarelli]** — RM: **[RM 2]**
+- **Luis Fernando Picarelli** — RM: **[RM 2]**
 
 ## 📌 Descrição do Projeto
 Plataforma integrada de monitoramento e análise de riscos urbanos (alagamentos, ilhas de calor e interrupções de serviços essenciais), composta por backend em **Java com Spring Boot** e aplicativo mobile em **React Native (Expo + TypeScript)**.
