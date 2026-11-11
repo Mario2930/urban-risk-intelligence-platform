@@ -52,6 +52,11 @@ public class RiskAnalysisService {
         }
     }
 
+    public void resetDatabase() {
+        repository.deleteAll();
+        seedInitialData();
+    }
+
     public RiskEvent evaluateRiskMetrics(RiskEvent event, long corroboratingEventsCount) {
         double baseConfidence;
         String source = event.getSourceType() != null ? event.getSourceType().toUpperCase() : "COMUNIDADE";

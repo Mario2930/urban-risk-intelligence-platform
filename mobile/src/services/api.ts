@@ -29,3 +29,8 @@ export const triggerSensorSimulation = async (): Promise<RiskEvent> => {
   const response = await api.post<RiskEvent>('/simulate');
   return response.data;
 };
+
+export const resetAllEvents = async (): Promise<RiskEvent[]> => {
+  const response = await api.delete<RiskEvent[]>('/reset');
+  return response.data;
+};

@@ -14,10 +14,15 @@ export const ConnectionBanner: React.FC<ConnectionBannerProps> = ({
 }) => {
   return (
     <View style={[styles.banner, isConnected ? styles.online : styles.offline]}>
-      <Text style={styles.statusText}>
+      <Text style={styles.titleText}>
         {isConnected
-          ? `🟢 CONECTADO EM TEMPO REAL • Sincronizado às ${lastSyncTime} (${latencyMs ?? 0}ms)`
-          : `🔴 BACKEND DESCONECTADO • Exibindo último estado seguro em cache. Reconectando automaticamente...`}
+          ? '🟢 SISTEMA CONECTADO EM TEMPO REAL'
+          : '🔴 BACKEND DESCONECTADO (MODO OFFLINE)'}
+      </Text>
+      <Text style={styles.subText}>
+        {isConnected
+          ? `Última sincronização com a API às ${lastSyncTime} • Latência: ${latencyMs ?? 0}ms`
+          : 'Sem conexão com o servidor. Exibindo dados em cache local e tentando reconectar a cada 4s...'}
       </Text>
     </View>
   );
@@ -25,21 +30,34 @@ export const ConnectionBanner: React.FC<ConnectionBannerProps> = ({
 
 const styles = StyleSheet.create({
   banner: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    marginBottom: 12,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    marginBottom: 14,
+    minHeight: 72,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
   },
   online: {
-    backgroundColor: '#065f46',
+    backgroundColor: '#064e3b',
+    borderColor: '#10b981',
   },
   offline: {
-    backgroundColor: '#991b1b',
+    backgroundColor: '#7f1d1d',
+    borderColor: '#f87171',
   },
-  statusText: {
+  titleText: {
     color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  subText: {
+    color: '#e2e8f0',
+    fontSize: 13,
+    fontWeight: '600',
     textAlign: 'center',
   },
 });

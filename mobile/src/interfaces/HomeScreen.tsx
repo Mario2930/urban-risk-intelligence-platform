@@ -6,13 +6,13 @@ import {
   FlatList,
   TouchableOpacity,
   TextInput,
-  ScrollView,
 } from 'react-native';
 import {
   fetchPrioritizedRisks,
   fetchDashboardIndicators,
   createCommunityReport,
   triggerSensorSimulation,
+  resetAllEvents,
 } from '../services/api';
 import { RiskEvent, DashboardIndicators } from '../types/risk';
 import { ConnectionBanner } from '../components/ConnectionBanner';
@@ -66,6 +66,15 @@ export const HomeScreen: React.FC = () => {
     }
   };
 
+  const handleResetEvents = async () => {
+    try {
+      await resetAllEvents();
+      await syncDataWithBackend();
+    } catch {
+      setIsConnected(false);
+    }
+  };
+
   const handleSubmitReport = async () => {
     if (!neighborhood.trim() || !description.trim()) return;
     try {
@@ -74,7 +83,12 @@ export const HomeScreen: React.FC = () => {
         neighborhood: neighborhood.trim(),
         description: description.trim(),
         sourceType: 'COMUNIDADE',
-        readingValue: selectedType === 'ALAGAMENTO' ? 75 : selectedType === 'ILHA_DE_CALOR' ? 39 : 8,
+        readingValue:
+          selectedType === 'ALAGAMENTO'
+            ? 75
+            : selectedType === 'ILHA_DE_CALOR'
+            ? 39
+            : 8,
       });
       setDescription('');
       setShowForm(false);
@@ -97,89 +111,113 @@ export const HomeScreen: React.FC = () => {
         latencyMs={latencyMs}
       />
 
-      {topCriticalAlert && (
-        <View style={styles.alertNotification}>
-          <Text style={styles.alertNotificationTitle}>
-            🚨 ALERTA PRIORITÁRIO EM {topCriticalAlert.neighborhood.toUpperCase()}
-          </Text>
-          <Text style={styles.alertNotificationBody}>
-            {topCriticalAlert.description} (Confiança:{' '}
-            {Math.round((topCriticalAlert.confidenceLevel || 0) * 100)}%)
-          </Text>
-        </View>
-      )}
-
-      <DashboardHeader indicators={indicators} />
-
-      <View style={styles.actionsRow}>
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.simBtn]}
-          onPress={handleSimulateSensor}
-        >
-          <Text style={styles.actionBtnText}>⚡ Simular Leitura IoT</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.reportBtn]}
-          onPress={() => setShowForm(!showForm)}
-        >
-          <Text style={styles.actionBtnText}>
-            {showForm ? '✖ Fechar Relato' : '➕ Relato Comunitário'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {showForm && (
-        <ScrollView style={styles.formBox}>
-          <Text style={styles.formLabel}>Tipo de Risco:</Text>
-          <View style={styles.typeSelectorRow}>
-            {(['ALAGAMENTO', 'ILHA_DE_CALOR', 'INTERRUPCAO_SERVICO'] as const).map((type) => (
-              <TouchableOpacity
-                key={type}
-                style={[
-                  styles.typeChip,
-                  selectedType === type && styles.typeChipSelected,
-                ]}
-                onPress={() => setSelectedType(type)}
-              >
-                <Text style={styles.typeChipText}>{type.replace('_', ' ')}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <Text style={styles.formLabel}>Bairro / Região:</Text>
-          <TextInput
-            style={styles.input}
-            value={neighborhood}
-            onChangeText={setNeighborhood}
-            placeholder="Ex: Ipiranga, Vila Mariana..."
-            placeholderTextColor="#64748b"
-          />
-
-          <Text style={styles.formLabel}>Descrição da Ocorrência (Anônimo - LGPD):</Text>
-          <TextInput
-            style={styles.input}
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Descreva a situação observada no local..."
-            placeholderTextColor="#64748b"
-          />
-
-          <TouchableOpacity style={styles.submitBtn} onPress={handleSubmitReport}>
-            <Text style={styles.submitBtnText}>Enviar Alerta para Análise</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      )}
-
-      <Text style={styles.sectionTitle}>
-        📋 Eventos Priorizados por IA ({events.length})
-      </Text>
-
       <FlatList
         data={events}
         keyExtractor={(item, idx) => String(item.id ?? idx)}
+        ListHeaderComponent={
+          <View>
+            {topCriticalAlert && (
+              <View style={styles.alertNotification}>
+                <Text style={styles.alertNotificationTitle}>
+                  🚨 ALERTA PRIORITÁRIO EM {topCriticalAlert.neighborhood.toUpperCase()}
+                </Text>
+                <Text style={styles.alertNotificationBody}>
+                  {topCriticalAlert.description} (Confiança:{' '}
+                  {Math.round((topCriticalAlert.confidenceLevel || 0) * 100)}%)
+                </Text>
+              </View>
+            )}
+
+            <DashboardHeader indicators={indicators} />
+
+            <View style={styles.actionsRow}>
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.simBtn]}
+                onPress={handleSimulateSensor}
+              >
+                <Text style={styles.actionBtnText}>⚡ Simular IoT</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.reportBtn]}
+                onPress={() => setShowForm(!showForm)}
+              >
+                <Text style={styles.actionBtnText}>
+                  {showForm ? '✖ Fechar Relato' : '➕ Adicionar Relato'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.resetBtn]}
+                onPress={handleResetEvents}
+              >
+                <Text style={styles.actionBtnText}>🗑️ Resetar</Text>
+              </TouchableOpacity>
+            </View>
+
+            {showForm && (
+              <View style={styles.formBox}>
+                <Text style={styles.formTitle}>Novo Relato Comunitário</Text>
+
+                <Text style={styles.formLabel}>Tipo de Risco:</Text>
+                <View style={styles.typeSelectorRow}>
+                  {(['ALAGAMENTO', 'ILHA_DE_CALOR', 'INTERRUPCAO_SERVICO'] as const).map(
+                    (type) => (
+                      <TouchableOpacity
+                        key={type}
+                        style={[
+                          styles.typeChip,
+                          selectedType === type && styles.typeChipSelected,
+                        ]}
+                        onPress={() => setSelectedType(type)}
+                      >
+                        <Text style={styles.typeChipText}>
+                          {type.replace(/_/g, ' ')}
+                        </Text>
+                      </TouchableOpacity>
+                    )
+                  )}
+                </View>
+
+                <Text style={styles.formLabel}>Bairro / Região:</Text>
+                <TextInput
+                  style={styles.input}
+                  value={neighborhood}
+                  onChangeText={setNeighborhood}
+                  placeholder="Ex: Ipiranga, Vila Mariana..."
+                  placeholderTextColor="#64748b"
+                />
+
+                <Text style={styles.formLabel}>
+                  Descrição da Ocorrência (Anônimo - LGPD):
+                </Text>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  value={description}
+                  onChangeText={setDescription}
+                  placeholder="Descreva a situação observada no local..."
+                  placeholderTextColor="#64748b"
+                  multiline
+                />
+
+                <TouchableOpacity
+                  style={styles.submitBtn}
+                  onPress={handleSubmitReport}
+                >
+                  <Text style={styles.submitBtnText}>
+                    Enviar Alerta para Análise
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <Text style={styles.sectionTitle}>
+              📋 Eventos Priorizados por IA ({events.length})
+            </Text>
+          </View>
+        }
         renderItem={({ item }) => <RiskCard event={item} />}
-        contentContainerStyle={{ paddingBottom: 24 }}
+        contentContainerStyle={{ paddingBottom: 32 }}
       />
     </View>
   );
@@ -190,52 +228,57 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0f172a',
     paddingHorizontal: 16,
-    paddingTop: 44,
+    paddingTop: 32,
   },
   title: {
     color: '#f8fafc',
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '800',
   },
   subtitle: {
     color: '#94a3b8',
     fontSize: 13,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   alertNotification: {
     backgroundColor: '#7f1d1d',
     borderWidth: 1,
     borderColor: '#f87171',
     borderRadius: 8,
-    padding: 10,
+    padding: 12,
     marginBottom: 12,
   },
   alertNotificationTitle: {
     color: '#fecaca',
     fontWeight: '800',
-    fontSize: 12,
-    marginBottom: 2,
+    fontSize: 13,
+    marginBottom: 4,
   },
   alertNotificationBody: {
     color: '#ffffff',
-    fontSize: 12,
+    fontSize: 13,
   },
   actionsRow: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 12,
+    marginBottom: 14,
   },
   actionBtn: {
     flex: 1,
-    paddingVertical: 11,
+    paddingVertical: 13,
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   simBtn: {
     backgroundColor: '#0284c7',
   },
   reportBtn: {
     backgroundColor: '#4f46e5',
+  },
+  resetBtn: {
+    backgroundColor: '#475569',
+    flex: 0.65,
   },
   actionBtnText: {
     color: '#ffffff',
@@ -244,27 +287,34 @@ const styles = StyleSheet.create({
   },
   formBox: {
     backgroundColor: '#1e293b',
-    padding: 12,
-    borderRadius: 10,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#475569',
+  },
+  formTitle: {
+    color: '#f8fafc',
+    fontSize: 16,
+    fontWeight: '800',
     marginBottom: 12,
-    maxHeight: 270,
   },
   formLabel: {
     color: '#cbd5e1',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   typeSelectorRow: {
     flexDirection: 'row',
-    gap: 6,
-    marginBottom: 10,
+    gap: 8,
+    marginBottom: 14,
   },
   typeChip: {
     flex: 1,
-    paddingVertical: 6,
+    paddingVertical: 10,
     backgroundColor: '#334155',
-    borderRadius: 6,
+    borderRadius: 8,
     alignItems: 'center',
   },
   typeChipSelected: {
@@ -272,33 +322,40 @@ const styles = StyleSheet.create({
   },
   typeChipText: {
     color: '#ffffff',
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
   },
   input: {
     backgroundColor: '#0f172a',
     color: '#f8fafc',
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    marginBottom: 10,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: '#334155',
+    fontSize: 14,
+  },
+  textArea: {
+    minHeight: 70,
+    textAlignVertical: 'top',
   },
   submitBtn: {
     backgroundColor: '#16a34a',
-    paddingVertical: 10,
-    borderRadius: 6,
+    paddingVertical: 13,
+    borderRadius: 8,
     alignItems: 'center',
+    marginTop: 4,
   },
   submitBtnText: {
     color: '#ffffff',
-    fontWeight: '700',
+    fontWeight: '800',
+    fontSize: 14,
   },
   sectionTitle: {
     color: '#e2e8f0',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
-    marginBottom: 8,
+    marginBottom: 10,
   },
 });
